@@ -38,6 +38,12 @@ type xmlInterfaceData struct {
 	Signal []signalData
 }
 
+type xmlIntrospect struct {
+	Name      string `xml:"attr"`
+	Interface []xmlInterfaceData
+	Node      []*introspect
+}
+
 type interfaceData struct {
 	Name    string
 	Methods []methodData
@@ -45,12 +51,15 @@ type interfaceData struct {
 }
 
 type introspect struct {
-	Name      string `xml:"attr"`
-	Interface []xmlInterfaceData
-	Node      []*introspect
+	Name       string
+	Interfaces []xmlInterfaceData
+	Nodes      []*introspect
 }
 
 type Introspect interface {
+	NumInterface() int
+	Interface(i int) InterfaceData
+	InterfaceByName(string) InterfaceData
 	GetInterfaceData(name string) InterfaceData
 }
 
@@ -84,18 +93,27 @@ type SignalData interface {
 }
 
 func NewIntrospect(xmlIntro string) (Introspect, error) {
-	intro := new(introspect)
+	intro := new(xmlIntrospect)
 	buff := bytes.NewBufferString(xmlIntro)
 	err := xml.Unmarshal(buff, intro)
 	if err != nil {
 		return nil, err
 	}
 
-	return intro, nil
+	return introspect{intro.Name, intro.Interface, intro.Node}, nil
 }
 
+//func (p introspect) NumInterface() int { return len() }
+func (p introspect) NumInterface() int { return len(p.Interfaces) }
+func (p introspect) Interface(i int) InterfaceData {
+	iface := p.Interfaces[i]
+	return interfaceData{iface.Name, iface.Method, iface.Signal}
+}
+func (p introspect) InterfaceByName(name string) InterfaceData {
+	return p.GetInterfaceData(name)
+}
 func (p introspect) GetInterfaceData(name string) InterfaceData {
-	for _, v := range p.Interface {
+	for _, v := range p.Interfaces {
 		if v.Name == name {
 			return interfaceData{v.Name, v.Method, v.Signal} // Copy into an InterfaceData type.
 		}

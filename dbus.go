@@ -357,23 +357,27 @@ func (p *Connection) _GetIntrospect(dest string, path string) Introspect {
 }
 
 // Retrieve an interface by name.
-func (obj *Object) Interface(name string) Interface {
+func (obj *Object) NumInterface() int { return obj.intro.NumInterface() }
+func (obj *Object) Interface(i int) Interface  {
 	if obj == nil || obj.intro == nil {
 		return nil
 	}
-
-	iface := new(_interface)
-	iface.obj = obj
-	iface.name = name
-
+	data := obj.intro.Interface(i)
+	if nil == data {
+		return nil
+	}
+	name := data.GetName()
+	return &_interface{obj, name, data}
+}
+func (obj *Object) InterfaceByName(name string) Interface {
+	if obj == nil || obj.intro == nil {
+		return nil
+	}
 	data := obj.intro.GetInterfaceData(name)
 	if nil == data {
 		return nil
 	}
-
-	iface.intro = data
-
-	return iface
+	return &_interface{obj, name, data}
 }
 
 // The Introspect object describing obj.
