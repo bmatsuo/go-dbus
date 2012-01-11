@@ -100,6 +100,7 @@ type signalHandler struct {
 	proc func(*Message)
 }
 
+// A connection to a single D-Bus bus. See StandardBus.
 type Connection struct {
 	addressMap        map[string]string
 	uniqName          string
