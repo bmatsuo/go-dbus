@@ -147,30 +147,30 @@ type _interface struct {
 }
 
 type Method interface {
-	Introspect() MethodData
+	Introspect() MethodIntrospect
 	Interface() Interface
 }
 
 type method struct {
 	iface Interface
-	MethodData
+	MethodIntrospect
 }
 
-func (m *method) Interface() Interface   { return m.iface }
-func (m *method) Introspect() MethodData { return m.MethodData }
+func (m *method) Interface() Interface         { return m.iface }
+func (m *method) Introspect() MethodIntrospect { return m.MethodIntrospect }
 
 type Signal interface {
-	Introspect() SignalData
+	Introspect() SignalIntrospect
 	Interface() Interface
 }
 
 type signal struct {
 	iface Interface
-	SignalData
+	SignalIntrospect
 }
 
-func (s *signal) Interface() Interface   { return s.iface }
-func (s *signal) Introspect() SignalData { return s.SignalData }
+func (s *signal) Interface() Interface         { return s.iface }
+func (s *signal) Introspect() SignalIntrospect { return s.SignalIntrospect }
 
 func (iface *_interface) GetName() string           { return iface.name }
 func (iface *_interface) Object() *Object           { return iface.obj }

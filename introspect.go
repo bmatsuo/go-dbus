@@ -74,23 +74,23 @@ type InterfaceData interface {
 	GetName() string
 	// Access the interface's method API.
 	NumMethod() int
-	Method(int) MethodData
-	MethodByName(string) MethodData
-	GetMethodData(name string) MethodData
+	Method(int) MethodIntrospect
+	MethodByName(string) MethodIntrospect
+	GetMethodData(name string) MethodIntrospect
 	// Access the interface's signal API
 	NumSignal() int
-	Signal(int) SignalData
-	SignalByName(string) SignalData
-	GetSignalData(name string) SignalData
+	Signal(int) SignalIntrospect
+	SignalByName(string) SignalIntrospect
+	GetSignalData(name string) SignalIntrospect
 }
 
-type MethodData interface {
+type MethodIntrospect interface {
 	GetName() string
 	GetInSignature() string
 	GetOutSignature() string
 }
 
-type SignalData interface {
+type SignalIntrospect interface {
 	GetName() string
 	GetSignature() string
 }
@@ -106,7 +106,7 @@ func NewIntrospect(xmlIntro string) (Introspect, error) {
 	return introspect{intro.Name, intro.Interface, intro.Node}, nil
 }
 
-func (p introspect) GetName() string { return p.Name }
+func (p introspect) GetName() string   { return p.Name }
 func (p introspect) NumInterface() int { return len(p.Interfaces) }
 func (p introspect) Interface(i int) InterfaceData {
 	iface := p.Interfaces[i]
@@ -124,12 +124,12 @@ func (p introspect) GetInterfaceData(name string) InterfaceData {
 	return nil
 }
 
-func (p interfaceData) NumMethod() int          { return len(p.Methods) }
-func (p interfaceData) Method(i int) MethodData { return p.Methods[i] }
-func (p interfaceData) MethodByName(name string) MethodData {
+func (p interfaceData) NumMethod() int                { return len(p.Methods) }
+func (p interfaceData) Method(i int) MethodIntrospect { return p.Methods[i] }
+func (p interfaceData) MethodByName(name string) MethodIntrospect {
 	return p.GetMethodData(name)
 }
-func (p interfaceData) GetMethodData(name string) MethodData {
+func (p interfaceData) GetMethodData(name string) MethodIntrospect {
 	for _, v := range p.Methods {
 		if v.GetName() == name {
 			return v
@@ -138,12 +138,12 @@ func (p interfaceData) GetMethodData(name string) MethodData {
 	return nil
 }
 
-func (p interfaceData) NumSignal() int          { return len(p.Signals) }
-func (p interfaceData) Signal(i int) SignalData { return p.Signals[i] }
-func (p interfaceData) SignalByName(name string) SignalData {
+func (p interfaceData) NumSignal() int                { return len(p.Signals) }
+func (p interfaceData) Signal(i int) SignalIntrospect { return p.Signals[i] }
+func (p interfaceData) SignalByName(name string) SignalIntrospect {
 	return p.GetSignalData(name)
 }
-func (p interfaceData) GetSignalData(name string) SignalData {
+func (p interfaceData) GetSignalData(name string) SignalIntrospect {
 	for _, v := range p.Signals {
 		if v.GetName() == name {
 			return v
