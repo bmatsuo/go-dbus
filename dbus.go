@@ -137,7 +137,7 @@ type Interface interface {
 	Signal(i int) Signal
 	SignalByName(string) Signal
 	// Access underlying InterfaceData, which is analogous to a reflect.Type.
-	Data() InterfaceData
+	Introspect() InterfaceData
 }
 
 type _interface struct {
@@ -170,24 +170,24 @@ type signal struct {
 
 func (s *signal) Interface() Interface { return s.iface }
 
-func (iface *_interface) GetName() string     { return iface.name }
-func (iface *_interface) Object() *Object     { return iface.obj }
-func (iface *_interface) Data() InterfaceData { return iface.intro }
+func (iface *_interface) GetName() string           { return iface.name }
+func (iface *_interface) Object() *Object           { return iface.obj }
+func (iface *_interface) Introspect() InterfaceData { return iface.intro }
 
-func (iface *_interface) NumMethod() int      { return iface.Data().NumMethod() }
-func (iface *_interface) Method(i int) Method { return &method{iface, iface.Data().Method(i)} }
+func (iface *_interface) NumMethod() int      { return iface.intro.NumMethod() }
+func (iface *_interface) Method(i int) Method { return &method{iface, iface.intro.Method(i)} }
 func (iface *_interface) MethodByName(name string) Method {
-	data := iface.Data().MethodByName(name)
+	data := iface.intro.MethodByName(name)
 	if nil == data {
 		panic("invalid method")
 	}
 	return &method{iface, data}
 }
 
-func (iface *_interface) NumSignal() int      { return iface.Data().NumSignal() }
-func (iface *_interface) Signal(i int) Signal { return &signal{iface, iface.Data().Signal(i)} }
+func (iface *_interface) NumSignal() int      { return iface.intro.NumSignal() }
+func (iface *_interface) Signal(i int) Signal { return &signal{iface, iface.intro.Signal(i)} }
 func (iface *_interface) SignalByName(name string) Signal {
-	data := iface.Data().SignalByName(name)
+	data := iface.intro.SignalByName(name)
 	if nil == data {
 		panic("invalid signal")
 	}
@@ -360,13 +360,16 @@ func (p *Connection) _GetIntrospect(dest string, path string) Introspect {
 
 // Get the D-Bus destination for the object.
 func (obj *Object) GetDestination() string { return obj.dest }
+
 // Get the destination-relative path of the object.
 func (obj *Object) GetPath() string { return obj.path }
+
 // Get the ?full? Introspect name of the object.
 func (obj *Object) GetName() string { return obj.intro.GetName() }
 
 // The number of interfaces implemented by the object.
 func (obj *Object) NumInterface() int { return obj.intro.NumInterface() }
+
 // Retrieve an interface by index.
 func (obj *Object) Interface(i int) Interface {
 	if obj == nil || obj.intro == nil {
@@ -379,6 +382,7 @@ func (obj *Object) Interface(i int) Interface {
 	name := data.GetName()
 	return &_interface{obj, name, data}
 }
+
 // Retrieve an interface by name.
 func (obj *Object) InterfaceByName(name string) Interface {
 	if obj == nil || obj.intro == nil {
@@ -390,6 +394,7 @@ func (obj *Object) InterfaceByName(name string) Interface {
 	}
 	return &_interface{obj, name, data}
 }
+
 // The Introspect type describing the object.
 func (obj *Object) Introspect() Introspect { return obj.intro }
 
