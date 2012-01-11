@@ -1,7 +1,10 @@
 Documentation
 =============
 
-Look at the API on [GoPkgDoc](http://gopkgdoc.appspot.com/pkg/github.com/norisatir/go-dbus).
+**This link is not accurate** Look at the API on [GoPkgDoc](http://gopkgdoc.appspot.com/pkg/github.com/norisatir/go-dbus).
+
+The go-dbus provides object oriented D-Bus bindings. The method API is similar
+to package "reflect".
 
 Installation
 ============
@@ -11,12 +14,33 @@ Installation
 Usage
 =====
 
+Interfaces
+----------
+
+Interfaces are obtained with
+
+    _iface := conn.Object(dest, path).InterfaceByName(iname)
+
+They can also be iterated
+
+    for obj, i := conn.Object(dest, path), 0; i < obj.NumInterface(); i++ {
+        iface := obj.Interface(i)
+        //...
+    }
+
 Methods
 -------
 
-Methods is obtained with
+Methods are obtained with
 
-    meth, err := conn.Object(dest, path).Interface(iface).Method(method)
+    meth := conn.Object(dest, path).InterfaceByName(iface).MethodByName(mname)
+
+They can also be iterated
+
+    for iface, i := conn.Object(dest, path).InterfaceByName(iname), 0; i < iface.NumMethod(); i++ {
+        meth := iface.Method(i)
+        //...
+    }
 
 They are called with
 
@@ -27,13 +51,36 @@ Signals
 
 Signals are obtained with
 
-    sig, err := conn.Object(dest, path).Interface(iface).Signal(signal)
+    sig := conn.Object(dest, path).InterfaceByName(iface).SignalByName(sname)
 
-they are emitted with
+They can also be iterated
+
+    for obj, i := conn.Object(dest, path).Interface(iface), 0; i < obj.NumSignal(); i++ {
+        sig := obj.Signal(i)
+        //...
+    }
+
+They are emitted with
 
     err = conn.Emit(sig)
 
 **TODO** Add signal handling usage.
+
+Introspect
+----------
+
+Object introspection is done automatically. It provides a way to inspect the
+methods and signals of the. To retrieve the Introspect type describing an object
+
+    intro := conn.Object(dest, path).Introspect()
+
+Similar operations can be performed on Interface types
+
+    idata := conn.Object(dest, path).InterfaceByName(iname).Data()
+
+MethodData/SignalData types are accessible through Introspect types. The data
+accessible in these types is accessible through corresponding Method/Signal
+types accessible through Object types.
 
 An example
 ----------
@@ -52,7 +99,6 @@ func main() {
     var (
         err error
         conn *dbus.Connection
-        method *dbus.Method
         out []interface{}
     )
 
@@ -64,28 +110,14 @@ func main() {
         log.Fatal("Initialization error:", err)
     }
 
-    // Get objects.
-    obj := conn.Object("org.freedesktop.Notifications", "/org/freedesktop/Notifications")
+	method := conn.Object("org.freedesktop.Notifications", "/org/freedesktop/Notifications").
+		InterfaceByName("org.freedesktop.Notifications").
+		MethodByName("Notify")
 
     // Introspect objects.
-    var intro dbus.Introspect
-    method, err = obj.Interface("org.freedesktop.DBus.Introspectable").Method("Introspect")
-    if err != nil {
-        log.Fatal(err)
-    }
-    out, err = conn.Call(method)
-    if err != nil {
-        log.Fatal("Introspect error:", err)
-    }
-    intro, err = dbus.NewIntrospect(out[0].(string))
-    m := intro.GetInterfaceData("org.freedesktop.Notifications").GetMethodData("Notify")
-    log.Printf("%s in:%s out:%s", m.GetName(), m.GetInSignature(), m.GetOutSignature())
+    log.Printf("%s in:%s out:%s", method.GetName(), method.GetInSignature(), method.GetOutSignature())
 
     // Call object methods.
-    method, err = obj.Interface("org.freedesktop.Notifications").Method("Notify")
-    if err != nil {
-        log.Fatal(err)
-    }
     out, err = conn.Call(method,
 		"dbus-tutorial", uint32(0), "",
         "dbus-tutorial", "You've been notified!",
