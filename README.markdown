@@ -74,10 +74,11 @@ methods and signals of an object. To retrieve the Introspect type describing an 
 
     odata := conn.Object(dest, path).Introspect()
 
-Introspection can be performed on Interface and Method types as well.
+Introspection can be performed on Interface, Method, and Signal types as well.
 
     idata := conn.Object(dest, path).InterfaceByName(iname).Introspect()
-    mdata := conn.Object(dest, path).InterfaceByName(iname).Introspect()
+    mdata := conn.Object(dest, path).InterfaceByName(iname).MethodByName(mname).Introspect()
+    sdata := conn.Object(dest, path).InterfaceByName(iname).SignalByName(sname).Introspect()
 
 Introspection is done under the hood during `conn.Object(dest, path)`. So these
 methods are 'cheap' and require no network communication.
