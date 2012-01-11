@@ -111,7 +111,6 @@ type Connection struct {
 }
 
 // An Object type is analogous to the reflect.Value type for D-Bus remote objects.
-// The Introspect type is analogous to a reflect.Value's corresponding reflect.Type.
 type Object struct {
 	dest  string
 	path  string
@@ -390,7 +389,7 @@ func (obj *Object) InterfaceByName(name string) Interface {
 	}
 	return &_interface{obj, name, data}
 }
-// The Introspect object describing the object.
+// The Introspect type describing the object.
 func (obj *Object) Introspect() Introspect { return obj.intro }
 
 func (p *Connection) _GetProxy() Interface {
