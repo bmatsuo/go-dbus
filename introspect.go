@@ -28,15 +28,25 @@ type signalData struct {
 	Arg  []argData
 }
 
-type interfaceData struct {
+// This is done to give InterfaceData more go-friendly interface API;
+// NumMethod(), Method(int), NumSignal(), Signal(int). See packages
+// "reflect", "flag", etc. The "xml" package requires fields Method and
+// Signal to have those names.
+type xmlInterfaceData struct {
 	Name   string `xml:"attr"`
 	Method []methodData
 	Signal []signalData
 }
 
+type interfaceData struct {
+	Name    string
+	Methods []methodData
+	Signals []signalData
+}
+
 type introspect struct {
 	Name      string `xml:"attr"`
-	Interface []interfaceData
+	Interface []xmlInterfaceData
 	Node      []*introspect
 }
 
@@ -45,9 +55,18 @@ type Introspect interface {
 }
 
 type InterfaceData interface {
-	GetMethodData(name string) MethodData
-	GetSignalData(name string) SignalData
+	// Get the interface name.
 	GetName() string
+	// Access the interface's method API.
+	NumMethod() int
+	Method(int) MethodData
+	MethodByName(string) MethodData
+	GetMethodData(name string) MethodData
+	// Access the interface's signal API
+	NumSignal() int
+	Signal(int) SignalData
+	SignalByName(string) SignalData
+	GetSignalData(name string) SignalData
 }
 
 type MethodData interface {
@@ -75,14 +94,19 @@ func NewIntrospect(xmlIntro string) (Introspect, error) {
 func (p introspect) GetInterfaceData(name string) InterfaceData {
 	for _, v := range p.Interface {
 		if v.Name == name {
-			return v
+			return interfaceData{v.Name, v.Method, v.Signal} // Copy into an InterfaceData type.
 		}
 	}
 	return nil
 }
 
+func (p interfaceData) NumMethod() int          { return len(p.Methods) }
+func (p interfaceData) Method(i int) MethodData { return p.Methods[i] }
+func (p interfaceData) MethodByName(name string) MethodData {
+	return p.GetMethodData(name)
+}
 func (p interfaceData) GetMethodData(name string) MethodData {
-	for _, v := range p.Method {
+	for _, v := range p.Methods {
 		if v.GetName() == name {
 			return v
 		}
@@ -90,8 +114,13 @@ func (p interfaceData) GetMethodData(name string) MethodData {
 	return nil
 }
 
+func (p interfaceData) NumSignal() int          { return len(p.Signals) }
+func (p interfaceData) Signal(i int) SignalData { return p.Signals[i] }
+func (p interfaceData) SignalByName(name string) SignalData {
+	return p.GetSignalData(name)
+}
 func (p interfaceData) GetSignalData(name string) SignalData {
-	for _, v := range p.Signal {
+	for _, v := range p.Signals {
 		if v.GetName() == name {
 			return v
 		}
