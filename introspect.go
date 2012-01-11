@@ -30,8 +30,8 @@ type signalData struct {
 
 // This is done to give InterfaceData more go-friendly interface API;
 // NumMethod(), Method(int), NumSignal(), Signal(int). See packages
-// "reflect", "flag", etc. The "xml" package requires fields Method and
-// Signal to have those names.
+// "reflect". The "xml" package requires fields Method and Signal to
+// have those names.
 type xmlInterfaceData struct {
 	Name   string `xml:"attr"`
 	Method []methodData
