@@ -74,13 +74,13 @@ methods and signals of an object. To retrieve the Introspect type describing an 
 
     intro := conn.Object(dest, path).Introspect()
 
-Similar operations can be performed on Interface types
+Introspection can be performed on Interface and Method types as well.
 
-    idata := conn.Object(dest, path).InterfaceByName(iname).Data()
+    idata := conn.Object(dest, path).InterfaceByName(iname).Introspect()
+    mdata := conn.Object(dest, path).InterfaceByName(iname).Introspect()
 
-MethodData/SignalData types are accessible through Introspect types. The data
-in these types is accessible through corresponding Method/Signal
-types accessed via Object types.
+Introspection is done under the hood during `conn.Object(dest, path)`. So these
+methods are 'cheap' and require no network communication.
 
 An example
 ----------
@@ -115,7 +115,8 @@ func main() {
 		MethodByName("Notify")
 
     // Introspect objects.
-    log.Printf("%s in:%s out:%s", method.GetName(), method.GetInSignature(), method.GetOutSignature())
+	m := method.Introspect()
+    log.Printf("%s in:%s out:%s", m.GetName(), m.GetInSignature(), m.GetOutSignature())
 
     // Call object methods.
     out, err = conn.Call(method,
