@@ -19,7 +19,7 @@ Interfaces
 
 Interfaces are obtained with
 
-    _iface := conn.Object(dest, path).InterfaceByName(iname)
+    iface := conn.Object(dest, path).InterfaceByName(iname)
 
 They can also be iterated
 
@@ -72,7 +72,7 @@ Introspect
 Object introspection is done automatically. It provides a way to inspect the
 methods and signals of an object. To retrieve the Introspect type describing an object
 
-    intro := conn.Object(dest, path).Introspect()
+    odata := conn.Object(dest, path).Introspect()
 
 Introspection can be performed on Interface and Method types as well.
 
