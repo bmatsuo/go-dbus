@@ -79,8 +79,8 @@ Similar operations can be performed on Interface types
     idata := conn.Object(dest, path).InterfaceByName(iname).Data()
 
 MethodData/SignalData types are accessible through Introspect types. The data
-accessible in these types is accessible through corresponding Method/Signal
-types accessible through Object types.
+in these types is accessible through corresponding Method/Signal
+types accessed via Object types.
 
 An example
 ----------
