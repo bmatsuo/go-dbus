@@ -56,7 +56,10 @@ type introspect struct {
 	Nodes      []*introspect
 }
 
+// The Introspect type is analogous to the reflect.Type type for D-Bus objects.
+// It describes the API of a D-Bus object.
 type Introspect interface {
+	GetName() string
 	NumInterface() int
 	Interface(i int) InterfaceData
 	InterfaceByName(string) InterfaceData
@@ -103,7 +106,7 @@ func NewIntrospect(xmlIntro string) (Introspect, error) {
 	return introspect{intro.Name, intro.Interface, intro.Node}, nil
 }
 
-//func (p introspect) NumInterface() int { return len() }
+func (p introspect) GetName() string { return p.Name }
 func (p introspect) NumInterface() int { return len(p.Interfaces) }
 func (p introspect) Interface(i int) InterfaceData {
 	iface := p.Interfaces[i]

@@ -110,6 +110,8 @@ type Connection struct {
 	proxy             Interface
 }
 
+// An Object type is analogous to the reflect.Value type for D-Bus remote objects.
+// The Introspect type is analogous to a reflect.Value's corresponding reflect.Type.
 type Object struct {
 	dest  string
 	path  string
@@ -356,9 +358,17 @@ func (p *Connection) _GetIntrospect(dest string, path string) Introspect {
 	return intro
 }
 
-// Retrieve an interface by name.
+// Get the D-Bus destination for the object.
+func (obj *Object) GetDestination() string { return obj.dest }
+// Get the destination-relative path of the object.
+func (obj *Object) GetPath() string { return obj.path }
+// Get the ?full? Introspect name of the object.
+func (obj *Object) GetName() string { return obj.intro.GetName() }
+
+// The number of interfaces implemented by the object.
 func (obj *Object) NumInterface() int { return obj.intro.NumInterface() }
-func (obj *Object) Interface(i int) Interface  {
+// Retrieve an interface by index.
+func (obj *Object) Interface(i int) Interface {
 	if obj == nil || obj.intro == nil {
 		return nil
 	}
@@ -369,6 +379,7 @@ func (obj *Object) Interface(i int) Interface  {
 	name := data.GetName()
 	return &_interface{obj, name, data}
 }
+// Retrieve an interface by name.
 func (obj *Object) InterfaceByName(name string) Interface {
 	if obj == nil || obj.intro == nil {
 		return nil
@@ -379,8 +390,7 @@ func (obj *Object) InterfaceByName(name string) Interface {
 	}
 	return &_interface{obj, name, data}
 }
-
-// The Introspect object describing obj.
+// The Introspect object describing the object.
 func (obj *Object) Introspect() Introspect { return obj.intro }
 
 func (p *Connection) _GetProxy() Interface {
