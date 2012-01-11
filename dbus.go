@@ -147,7 +147,7 @@ type _interface struct {
 }
 
 type Method interface {
-	MethodData
+	Introspect() MethodData
 	Interface() Interface
 }
 
@@ -156,10 +156,11 @@ type method struct {
 	MethodData
 }
 
-func (m *method) Interface() Interface { return m.iface }
+func (m *method) Interface() Interface   { return m.iface }
+func (m *method) Introspect() MethodData { return m.MethodData }
 
 type Signal interface {
-	SignalData
+	Introspect() SignalData
 	Interface() Interface
 }
 
@@ -168,7 +169,8 @@ type signal struct {
 	SignalData
 }
 
-func (s *signal) Interface() Interface { return s.iface }
+func (s *signal) Interface() Interface   { return s.iface }
+func (s *signal) Introspect() SignalData { return s.SignalData }
 
 func (iface *_interface) GetName() string           { return iface.name }
 func (iface *_interface) Object() *Object           { return iface.obj }
@@ -414,7 +416,7 @@ func (p *Connection) _GetProxy() Interface {
 
 // Call a method with the given arguments.
 func (p *Connection) Call(method Method, args ...interface{}) ([]interface{}, error) {
-	iface, data := method.Interface(), MethodData(method)
+	iface, data := method.Interface(), method.Introspect()
 	msg := NewMessage()
 
 	obj := iface.Object()
@@ -438,7 +440,7 @@ func (p *Connection) Call(method Method, args ...interface{}) ([]interface{}, er
 
 // Emit a signal with the given arguments.
 func (p *Connection) Emit(signal Signal, args ...interface{}) error {
-	iface, data := signal.Interface(), SignalData(signal)
+	iface, data := signal.Interface(), signal.Introspect()
 	msg := NewMessage()
 
 	obj := iface.Object()
