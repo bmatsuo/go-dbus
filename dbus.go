@@ -122,32 +122,46 @@ type Interface struct {
 	intro InterfaceData
 }
 
-type Method struct {
-	iface *Interface
-	data MethodData
+type Method interface {
+	MethodData
+	Interface() *Interface
 }
 
-type Signal struct {
+type method struct {
 	iface *Interface
-	data SignalData
+	MethodData
 }
+
+func (m *method) Interface() *Interface { return m.iface }
+
+type Signal interface {
+	SignalData
+	Interface() *Interface
+}
+
+type signal struct {
+	iface *Interface
+	SignalData
+}
+
+func (s *signal) Interface() *Interface { return s.iface }
 
 // Retrieve a method by name.
-func (iface *Interface) Method(name string) (*Method, error) {
-	method := iface.intro.GetMethodData(name)
-	if nil == method {
+func (iface *Interface) Method(name string) (Method, error) {
+	data := iface.intro.GetMethodData(name)
+	if nil == data {
 		return nil, errors.New("Invalid Method")
 	}
-	return &Method{iface, method}, nil
+	return &method{iface, data}, nil
 }
 
 // Retrieve a signal by name.
-func (iface *Interface) Signal(name string) (*Signal, error) {
-	signal := iface.intro.GetSignalData(name)
-	if nil == signal {
+func (iface *Interface) Signal(name string) (Signal, error) {
+	data := iface.intro.GetSignalData(name)
+	if nil == data {
 		return nil, errors.New("Invalid Signalx")
 	}
-	return &Signal{iface, signal}, nil
+	return &signal{iface, data}, nil
 }
 
 func Connect(busType StandardBus) (*Connection, error) {
@@ -339,6 +353,9 @@ func (obj *Object) Interface(name string) *Interface {
 	return iface
 }
 
+// The Introspect object describing obj.
+func (obj *Object) Introspect() Introspect { return obj.intro }
+
 func (p *Connection) _GetProxy() *Interface {
 	obj := new(Object)
 	obj.path = "/org/freedesktop/DBus"
@@ -354,16 +371,16 @@ func (p *Connection) _GetProxy() *Interface {
 }
 
 // Call a method with the given arguments.
-func (p *Connection) Call(method *Method, args ...interface{}) ([]interface{}, error) {
-	iface := method.iface
+func (p *Connection) Call(method Method, args ...interface{}) ([]interface{}, error) {
+	iface, data := method.Interface(), MethodData(method)
 	msg := NewMessage()
 
 	msg.Type = METHOD_CALL
 	msg.Path = iface.obj.path
 	msg.Iface = iface.name
 	msg.Dest = iface.obj.dest
-	msg.Member = method.data.GetName()
-	msg.Sig = method.data.GetInSignature()
+	msg.Member = data.GetName()
+	msg.Sig = data.GetInSignature()
 	if len(args) > 0 {
 		msg.Params = args[:]
 	}
@@ -377,17 +394,16 @@ func (p *Connection) Call(method *Method, args ...interface{}) ([]interface{}, e
 }
 
 // Emit a signal with the given arguments.
-func (p *Connection) Emit(signal *Signal, args ...interface{}) error {
-	iface := signal.iface
-
+func (p *Connection) Emit(signal Signal, args ...interface{}) error {
+	iface, data := signal.Interface(), SignalData(signal)
 	msg := NewMessage()
 
 	msg.Type = SIGNAL
 	msg.Path = iface.obj.path
 	msg.Iface = iface.name
 	msg.Dest = iface.obj.dest
-	msg.Member = signal.data.GetName()
-	msg.Sig = signal.data.GetSignature()
+	msg.Member = data.GetName()
+	msg.Sig = data.GetSignature()
 	msg.Params = args[:]
 
 	buff, _ := msg._Marshal()
