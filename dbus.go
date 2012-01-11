@@ -120,30 +120,28 @@ type Object struct {
 
 // The Interface type is analogous to the reflect.Value type for D-Bus
 // interfaces. Methods/Signals accessed through an Interface can be passed to
-// Call/Emit. See also, InterfaceData.
+// Call/Emit. See also, InterfaceIntrospect.
 type Interface interface {
 	// The name of the interface.
 	GetName() string
 	// The object the interface belongs to.
 	Object() *Object
-	// Access interface methods. Like InterfaceData methods but returns a Method,
-	// not MethodData.
+	// Like InterfaceIntrospect methods but returns a Method, not MethodIntrospect.
 	NumMethod() int
 	Method(i int) Method
 	MethodByName(string) Method
-	// Access interface signals. Like InterfaceData methods but returns a Signal,
-	// not SignalData.
+	// Like InterfaceIntrospect methods but returns a Signal, not SignalIntrospect.
 	NumSignal() int
 	Signal(i int) Signal
 	SignalByName(string) Signal
-	// Access underlying InterfaceData, which is analogous to a reflect.Type.
-	Introspect() InterfaceData
+	// Access underlying InterfaceIntrospect, analogous to reflect.Value.Type.
+	Introspect() InterfaceIntrospect
 }
 
 type _interface struct {
 	obj   *Object
 	name  string
-	intro InterfaceData
+	intro InterfaceIntrospect
 }
 
 type Method interface {
@@ -172,9 +170,9 @@ type signal struct {
 func (s *signal) Interface() Interface         { return s.iface }
 func (s *signal) Introspect() SignalIntrospect { return s.SignalIntrospect }
 
-func (iface *_interface) GetName() string           { return iface.name }
-func (iface *_interface) Object() *Object           { return iface.obj }
-func (iface *_interface) Introspect() InterfaceData { return iface.intro }
+func (iface *_interface) GetName() string                 { return iface.name }
+func (iface *_interface) Object() *Object                 { return iface.obj }
+func (iface *_interface) Introspect() InterfaceIntrospect { return iface.intro }
 
 func (iface *_interface) NumMethod() int      { return iface.intro.NumMethod() }
 func (iface *_interface) Method(i int) Method { return &method{iface, iface.intro.Method(i)} }
@@ -390,7 +388,7 @@ func (obj *Object) InterfaceByName(name string) Interface {
 	if obj == nil || obj.intro == nil {
 		return nil
 	}
-	data := obj.intro.GetInterfaceData(name)
+	data := obj.intro.InterfaceByName(name)
 	if nil == data {
 		return nil
 	}
@@ -409,7 +407,7 @@ func (p *Connection) _GetProxy() Interface {
 	iface := new(_interface)
 	iface.obj = obj
 	iface.name = "org.freedesktop.DBus"
-	iface.intro = obj.intro.GetInterfaceData("org.freedesktop.DBus")
+	iface.intro = obj.intro.InterfaceByName("org.freedesktop.DBus")
 
 	return iface
 }

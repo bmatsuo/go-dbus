@@ -28,10 +28,9 @@ type signalData struct {
 	Arg  []argData
 }
 
-// This is done to give InterfaceData more go-friendly interface API;
-// NumMethod(), Method(int), NumSignal(), Signal(int). See packages
-// "reflect". The "xml" package requires fields Method and Signal to
-// have those names.
+// This is done to give InterfaceIntrospect more go-friendly interface API;
+// NumMethod(), Method(int), NumSignal(), Signal(int). See package "reflect".
+// The "xml" package requires fields Method and Signal to have those names.
 type xmlInterfaceData struct {
 	Name   string `xml:"attr"`
 	Method []methodData
@@ -61,15 +60,15 @@ type introspect struct {
 type Introspect interface {
 	GetName() string
 	NumInterface() int
-	Interface(i int) InterfaceData
-	InterfaceByName(string) InterfaceData
-	GetInterfaceData(name string) InterfaceData
+	Interface(i int) InterfaceIntrospect
+	InterfaceByName(string) InterfaceIntrospect
+	GetInterfaceData(name string) InterfaceIntrospect
 }
 
-// The InterfaceData type is analogous to the reflect.Type type for D-Bus
+// The InterfaceIntrospect type is analogous to the reflect.Type type for D-Bus
 // interfaces. It provides access to name and type signature information for an
 // interface's methods/signals.
-type InterfaceData interface {
+type InterfaceIntrospect interface {
 	// Get the interface name.
 	GetName() string
 	// Access the interface's method API.
@@ -108,17 +107,17 @@ func NewIntrospect(xmlIntro string) (Introspect, error) {
 
 func (p introspect) GetName() string   { return p.Name }
 func (p introspect) NumInterface() int { return len(p.Interfaces) }
-func (p introspect) Interface(i int) InterfaceData {
+func (p introspect) Interface(i int) InterfaceIntrospect {
 	iface := p.Interfaces[i]
 	return interfaceData{iface.Name, iface.Method, iface.Signal}
 }
-func (p introspect) InterfaceByName(name string) InterfaceData {
+func (p introspect) InterfaceByName(name string) InterfaceIntrospect {
 	return p.GetInterfaceData(name)
 }
-func (p introspect) GetInterfaceData(name string) InterfaceData {
+func (p introspect) GetInterfaceData(name string) InterfaceIntrospect {
 	for _, v := range p.Interfaces {
 		if v.Name == name {
-			return interfaceData{v.Name, v.Method, v.Signal} // Copy into an InterfaceData type.
+			return interfaceData{v.Name, v.Method, v.Signal} // Copy to InterfaceIntrospect.
 		}
 	}
 	return nil
