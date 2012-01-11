@@ -70,7 +70,7 @@ Introspect
 ----------
 
 Object introspection is done automatically. It provides a way to inspect the
-methods and signals of the. To retrieve the Introspect type describing an object
+methods and signals of an object. To retrieve the Introspect type describing an object
 
     intro := conn.Object(dest, path).Introspect()
 
