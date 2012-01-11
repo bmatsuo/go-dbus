@@ -25,11 +25,9 @@ var callTests = []callTest{
 }
 
 func (test callTest) Call(c *Connection) error {
-	method, err := c.Object(test.dest, test.path).Interface(test.iface).Method(test.method)
-	if err != nil {
-		return err
-	}
-	out, err := c.Call(method, test.args...)
+	out, err := c.Call(
+		c.Object(test.dest, test.path).Interface(test.iface).MethodByName(test.method),
+		test.args...)
 	if err != nil {
 		return fmt.Errorf("failed Method.Call: %v", err)
 	}

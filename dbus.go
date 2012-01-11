@@ -107,7 +107,7 @@ type Connection struct {
 	signalMatchRules  []signalHandler
 	conn              net.Conn
 	buffer            *bytes.Buffer
-	proxy             *Interface
+	proxy             Interface
 }
 
 type Object struct {
@@ -116,7 +116,29 @@ type Object struct {
 	intro Introspect
 }
 
-type Interface struct {
+// The Interface type is analogous to the reflect.Value type for D-Bus
+// interfaces. Methods/Signals accessed through an Interface can be passed to
+// Call/Emit. See also, InterfaceData.
+type Interface interface {
+	// The name of the interface.
+	GetName() string
+	// The object the interface belongs to.
+	Object() *Object
+	// Access interface methods. Like InterfaceData methods but returns a Method,
+	// not MethodData.
+	NumMethod() int
+	Method(i int) Method
+	MethodByName(string) Method
+	// Access interface signals. Like InterfaceData methods but returns a Signal,
+	// not SignalData.
+	NumSignal() int
+	Signal(i int) Signal
+	SignalByName(string) Signal
+	// Access underlying InterfaceData, which is analogous to a reflect.Type.
+	Data() InterfaceData
+}
+
+type _interface struct {
 	obj   *Object
 	name  string
 	intro InterfaceData
@@ -124,44 +146,50 @@ type Interface struct {
 
 type Method interface {
 	MethodData
-	Interface() *Interface
+	Interface() Interface
 }
 
 type method struct {
-	iface *Interface
+	iface Interface
 	MethodData
 }
 
-func (m *method) Interface() *Interface { return m.iface }
+func (m *method) Interface() Interface { return m.iface }
 
 type Signal interface {
 	SignalData
-	Interface() *Interface
+	Interface() Interface
 }
 
 type signal struct {
-	iface *Interface
+	iface Interface
 	SignalData
 }
 
-func (s *signal) Interface() *Interface { return s.iface }
+func (s *signal) Interface() Interface { return s.iface }
 
-// Retrieve a method by name.
-func (iface *Interface) Method(name string) (Method, error) {
-	data := iface.intro.GetMethodData(name)
+func (iface *_interface) GetName() string     { return iface.name }
+func (iface *_interface) Object() *Object     { return iface.obj }
+func (iface *_interface) Data() InterfaceData { return iface.intro }
+
+func (iface *_interface) NumMethod() int      { return iface.Data().NumMethod() }
+func (iface *_interface) Method(i int) Method { return &method{iface, iface.Data().Method(i)} }
+func (iface *_interface) MethodByName(name string) Method {
+	data := iface.Data().MethodByName(name)
 	if nil == data {
-		return nil, errors.New("Invalid Method")
+		panic("invalid method")
 	}
-	return &method{iface, data}, nil
+	return &method{iface, data}
 }
 
-// Retrieve a signal by name.
-func (iface *Interface) Signal(name string) (Signal, error) {
-	data := iface.intro.GetSignalData(name)
+func (iface *_interface) NumSignal() int      { return iface.Data().NumSignal() }
+func (iface *_interface) Signal(i int) Signal { return &signal{iface, iface.Data().Signal(i)} }
+func (iface *_interface) SignalByName(name string) Signal {
+	data := iface.Data().SignalByName(name)
 	if nil == data {
-		return nil, errors.New("Invalid Signalx")
+		panic("invalid signal")
 	}
-	return &signal{iface, data}, nil
+	return &signal{iface, data}
 }
 
 func Connect(busType StandardBus) (*Connection, error) {
@@ -305,12 +333,7 @@ func (p *Connection) _SendSync(msg *Message, callback func(*Message)) error {
 	return nil
 }
 
-func (p *Connection) _SendHello() error {
-	if method, err := p.proxy.Method("Hello"); err == nil {
-		p.Call(method)
-	}
-	return nil
-}
+func (p *Connection) _SendHello() { p.Call(p.proxy.MethodByName("Hello")) }
 
 func (p *Connection) _GetIntrospect(dest string, path string) Introspect {
 	msg := NewMessage()
@@ -334,12 +357,12 @@ func (p *Connection) _GetIntrospect(dest string, path string) Introspect {
 }
 
 // Retrieve an interface by name.
-func (obj *Object) Interface(name string) *Interface {
+func (obj *Object) Interface(name string) Interface {
 	if obj == nil || obj.intro == nil {
 		return nil
 	}
 
-	iface := new(Interface)
+	iface := new(_interface)
 	iface.obj = obj
 	iface.name = name
 
@@ -356,13 +379,13 @@ func (obj *Object) Interface(name string) *Interface {
 // The Introspect object describing obj.
 func (obj *Object) Introspect() Introspect { return obj.intro }
 
-func (p *Connection) _GetProxy() *Interface {
+func (p *Connection) _GetProxy() Interface {
 	obj := new(Object)
 	obj.path = "/org/freedesktop/DBus"
 	obj.dest = "org.freedesktop.DBus"
 	obj.intro, _ = NewIntrospect(dbusXMLIntro)
 
-	iface := new(Interface)
+	iface := new(_interface)
 	iface.obj = obj
 	iface.name = "org.freedesktop.DBus"
 	iface.intro = obj.intro.GetInterfaceData("org.freedesktop.DBus")
@@ -375,10 +398,11 @@ func (p *Connection) Call(method Method, args ...interface{}) ([]interface{}, er
 	iface, data := method.Interface(), MethodData(method)
 	msg := NewMessage()
 
+	obj := iface.Object()
 	msg.Type = METHOD_CALL
-	msg.Path = iface.obj.path
-	msg.Iface = iface.name
-	msg.Dest = iface.obj.dest
+	msg.Path = obj.path
+	msg.Iface = iface.GetName()
+	msg.Dest = obj.dest
 	msg.Member = data.GetName()
 	msg.Sig = data.GetInSignature()
 	if len(args) > 0 {
@@ -398,10 +422,11 @@ func (p *Connection) Emit(signal Signal, args ...interface{}) error {
 	iface, data := signal.Interface(), SignalData(signal)
 	msg := NewMessage()
 
+	obj := iface.Object()
 	msg.Type = SIGNAL
-	msg.Path = iface.obj.path
-	msg.Iface = iface.name
-	msg.Dest = iface.obj.dest
+	msg.Path = obj.path
+	msg.Iface = iface.GetName()
+	msg.Dest = obj.dest
 	msg.Member = data.GetName()
 	msg.Sig = data.GetSignature()
 	msg.Params = args[:]
@@ -426,7 +451,5 @@ func (p *Connection) Object(dest string, path string) *Object {
 // Handle received signals.
 func (p *Connection) Handle(rule *MatchRule, handler func(*Message)) {
 	p.signalMatchRules = append(p.signalMatchRules, signalHandler{*rule, handler})
-	if method, err := p.proxy.Method("AddMatch"); err == nil {
-		p.Call(method, rule._ToString())
-	}
+	p.Call(p.proxy.MethodByName("AddMatch"), rule._ToString())
 }

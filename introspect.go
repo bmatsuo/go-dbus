@@ -54,6 +54,9 @@ type Introspect interface {
 	GetInterfaceData(name string) InterfaceData
 }
 
+// The InterfaceData type is analogous to the reflect.Type type for D-Bus
+// interfaces. It provides access to name and type signature information for an
+// interface's methods/signals.
 type InterfaceData interface {
 	// Get the interface name.
 	GetName() string
